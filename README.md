@@ -2,7 +2,7 @@
 
 **Kelompok:** K-38  
 
-### Anggota Kelompok
+### Anggota 
 | Nama | NRP | Soal |
 |---|---|---|
 | Farrel Arteya Kumara | 5027251020 | 1-10 |
