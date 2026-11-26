@@ -1,10 +1,8 @@
-# Laporan Resmi Praktikum Modul 5 — Komunikasi Data & Jaringan Komputer 2026
-
-## Operation Geofront (Soal 1 – Soal 10)
+# Jarkom-Modul-5-2026-K-38
 
 **Kelompok:** K-38  
 
-### Anggota Kelompok
+### Anggota 
 | Nama | NRP | Soal |
 |---|---|---|
 | Farrel Arteya Kumara | 5027251020 | 1-10 |
