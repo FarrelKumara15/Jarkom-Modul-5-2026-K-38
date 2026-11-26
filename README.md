@@ -214,7 +214,15 @@ Geofront gelap gulita: kabel sudah ditarik, tapi saat Misato menekan tombol daya
 | **Toji** | 2 | `eth0`→`192.230.4.166/30`, `eth1`→`192.230.4.73/29` |
 
 ### Verifikasi
-Setiap router diverifikasi dengan `ip -br a`, `sysctl net.ipv4.ip_forward` (`= 1`), dan uji ping pada dua ujung seluruh 16 link router-ke-router.
+Setiap router diverifikasi dengan `ip -br a`, `sysctl net.ipv4.ip_forward` (`= 1`), dan uji ping pada dua ujung seluruh 16 link router-ke-router:
+
+- **`ip -br a` dan `sysctl net.ipv4.ip_forward` pada `Gendou`** (`eth0` mendapat IP DHCP dari NAT1 `192.168.122.61/24`, `eth1`–`eth8` aktif sesuai Soal 1, dan `net.ipv4.ip_forward = 1`):
+
+![Bukti Soal 2 - ip -br a dan IP forwarding di Gendou](Assets/Soal%202/gendou_ip_br_forwarding.png)
+
+- **Uji ping antar-ujung link router-ke-router dari `Gendou`** menuju seluruh 7 router cabang langsung (`.110`, `.114`, `.118`, `.122`, `.126`, `.130`, `.134` — **0% packet loss**):
+
+![Bukti Soal 2 - Ping link router-ke-router dari Gendou](Assets/Soal%202/gendou_ping_router_links.png)
 
 <br/>
 
@@ -231,7 +239,7 @@ Seluruh 16 router bawahan cukup memiliki **1 default route ke atas** ditambah ru
 | **Asuka** | `192.230.4.152/30` (Asuka–Kensuke) + `192.230.4.156/30` (Asuka–Ritsuko) | **`192.230.4.152/29`** | `192.230.4.118` |
 | **Fuyutsuki** | `192.230.4.160/30` (Fuyutsuki–Maya) + `192.230.4.164/30` (Fuyutsuki–Toji) | **`192.230.4.160/29`** | `192.230.4.134` |
 
-### Ringkasan Rute Statis per Router (`/root/<nama>.sh`)
+### Rute Statis per Router (`<nama>.sh`)
 - **`Gendou`:** 21 rute `ip route replace` (4 CIDR summary + 17 subnet lainnya) menuju 7 router cabang + `default` via `NAT1`.
 - **`Yui`:** `default via 192.230.4.109`, `192.230.0.0/23 via .4.138`, `192.230.4.0/27 via .4.142`, `192.230.4.32/28 via .4.146`.
 - **`Hikari`:** `default via 192.230.4.113`, `192.230.3.224/27 via .4.150`.
@@ -243,7 +251,7 @@ Seluruh 16 router bawahan cukup memiliki **1 default route ke atas** ditambah ru
 ### Pengujian Soal 3
 Pengujian dilakukan dari **`Armisael`** (`192.230.4.83`) menuju **`Lilith`** (`192.230.4.74`), **`Sachiel`** (`192.230.3.130`), dan **`Comm-Net`** (`192.230.2.2`). Ketiganya berhasil dengan **0% packet loss**:
 
-![Bukti Soal 3 - Armisael ping Lilith, Sachiel, dan Comm-Net](Assets/Soal%203/Screenshot%202026-11-24%20134946.png)
+![Bukti Soal 3 - Armisael ping Lilith, Sachiel, dan Comm-Net](Assets/Soal%203/armisael_ping_lilith_sachiel_commnet.png)
 
 <br/>
 
@@ -263,7 +271,18 @@ iptables -t nat -A POSTROUTING -s 192.230.0.0/16 -o eth0 -j MASQUERADE
 - **`-s 192.230.0.0/16 -o eth0`**: hanya menerjemahkan paket dari prefix internal yang keluar menuju `NAT1`; lalu lintas antar-LAN keluar lewat `eth1`–`eth8` sehingga mempertahankan alamat IP asli pengirim.
 - **DNS Resolver**: diatur `nameserver 8.8.8.8` di `/etc/resolv.conf` agar seluruh node dapat me-resolve nama domain seperti `deb.debian.org`.
 
-*(Catatan: tambahkan screenshot ping `8.8.8.8` & `deb.debian.org` dari `Armisael` dan `Lilith` serta `iptables -t nat -L POSTROUTING -n -v` di `Gendou` ke folder `Assets/Soal 4/`.)*
+### Bukti Pengujian Soal 4
+- **`Armisael`** berhasil `ping 8.8.8.8` (**0% packet loss**):
+
+![Bukti Soal 4 - Armisael ping 8.8.8.8](Assets/Soal%204/armisael_ping_8888.png)
+
+**`Lilith`** berhasil `ping 8.8.8.8` (**0% packet loss**):
+
+![Bukti Soal 4 - Lilith ping 8.8.8.8](Assets/Soal%204/lilith_ping_8888.png)
+
+**Counter rule NAT `MASQUERADE` di `Gendou`** (`iptables -t nat -L POSTROUTING -n -v`) naik menjadi `33 pkts, 2262 bytes`:
+
+![Bukti Soal 4 - Counter NAT MASQUERADE di Gendou](Assets/Soal%204/gendou_nat_masquerade_counter.png)
 
 <br/>
 
@@ -333,7 +352,7 @@ iptables -t nat -A POSTROUTING -s "$INTERNAL_NET" -o "$WAN_IF" -j MASQUERADE
 ### Pengujian Soal 5
 Setelah firewall `DROP` diaktifkan pada `Gendou`, pengujian `ping 8.8.8.8` dan `ping 192.230.4.74` (`Lilith`) dari `Armisael` tetap berhasil **0% packet loss**:
 
-![Bukti Soal 5 - Armisael ping 8.8.8.8 dan Lilith setelah firewall Gendou aktif](Assets/Soal%205/Screenshot%202026-11-24%20135817.png)
+![Bukti Soal 5 - Armisael ping 8.8.8.8 dan Lilith setelah firewall Gendou aktif](Assets/Soal%205/armisael_ping_8888_dan_lilith_setelah_fw.png)
 
 <br/>
 
@@ -373,16 +392,17 @@ Seluruh **25 node non-router** diberi IP statis dan gateway permanen melalui `/e
 ### Pengujian Soal 6 (`Unit-01` Setelah Restart)
 `ip -br a` menampilkan `192.230.4.66/29` pada `eth0` dan `ping` ke gateway `Misato` (`192.230.4.65`) berhasil **0% packet loss**:
 
-![Bukti Soal 6 - ip -br a dan ping gateway di Unit-01](Assets/Soal%206/Screenshot%202026-11-24%20135920.png)
+![Bukti Soal 6 - ip -br a dan ping gateway di Unit-01](Assets/Soal%206/unit01_ip_br_dan_ping_gateway.png)
 
 <br/>
 
 ## Soal 7: Membangunkan MAGI
 Membangunkan MAGI: Casper, Balthasar, dan Melchior di Switch-Terminal menunggu diaktifkan. Ritsuko ingin ketiganya melayani dulu, urusan keamanan dibahas nanti. Pasang iptables dan netcat-traditional lewat /root/<nama>.sh, lalu nyalakan listener sesuai port di glosarium. Dari Lilith, kirim pesan ke ketiganya dan ke port 5001 Balthasar. Tampilkan pesan yang diterima di tiap node.
 
-Pada `Magi-Casper` (`192.230.4.58`), `Magi-Balthasar` (`192.230.4.59`), dan `Magi-Melchior` (`192.230.4.60`), dipasang `ifupdown`, `iptables`, dan `netcat-traditional` melalui `/root/<nama>.sh`, lalu dijalankan listener `nc.traditional` sesuai port Glosarium (`Casper`: `5000`, `Balthasar`: `5000` & `5001`, `Melchior`: `5000`).
+Pada `Magi-Casper` (`192.230.4.58`), `Magi-Balthasar` (`192.230.4.59`), dan `Magi-Melchior` (`192.230.4.60`), dipasang `ifupdown`, `iptables`, dan `netcat-traditional` melalui `<nama>.sh`, lalu dijalankan listener `nc.traditional` sesuai port Glosarium (`Casper`: `5000`, `Balthasar`: `5000` & `5001`, `Melchior`: `5000`).
 
-Contoh script `/root/magi-balthasar.sh` (termasuk konfigurasi repo `trixie` + `trixie-updates` agar bebas error validasi waktu `sqv`):
+Script `magi-balthasar.sh`
+
 ```bash
 #!/bin/bash
 echo "nameserver 8.8.8.8" > /etc/resolv.conf
@@ -405,7 +425,7 @@ nohup bash -c 'while true; do nc.traditional -l -p 5001; done' >> /tmp/balthasar
 ### Pengujian Soal 7
 Pengiriman pesan dari `Lilith` ke ketiga node MAGI dan port `5001` Balthasar seluruhnya selesai dengan **`exit=0`**:
 
-![Bukti Soal 7 - Lilith mengirim pesan nc ke seluruh port MAGI](Assets/Soal%207/Screenshot%202026-11-24%20170950.png)
+![Bukti Soal 7 - Lilith mengirim pesan nc ke seluruh port MAGI](Assets/Soal%207/lilith_nc_magi_ports.png)
 
 <br/>
 
@@ -415,7 +435,7 @@ Mengenali kondisi normal: Pen-Pen dan Tokyo3-Core sudah ditandai sebagai calon s
 ### Pengujian Soal 8
 Pengujian dari **`Lilith`** ke ketiga port layanan berhasil (`Welcome to Pen-Pen`, `Welcome to Tokyo3-Core`, `syifa imutz` dengan `exit=0`), sedangkan koneksi ke port `22` langsung gagal seketika (`real 0m0.004s` dan `0m0.003s`, `exit=1`):
 
-![Bukti Soal 8 - Pengujian nc dari Lilith ke Pen-Pen dan Tokyo3-Core](Assets/Soal%208/Screenshot%202026-11-24%20172617.png)
+![Bukti Soal 8 - Pengujian nc dari Lilith ke Pen-Pen dan Tokyo3-Core](Assets/Soal%208/lilith_nc_penpen_tokyo3core_dan_port22.png)
 
 <br/>
 
@@ -427,21 +447,21 @@ Jalur belakang diutak-atik: tengah malam masuk laporan bahwa ada yang mengutak-a
 ### 1. Eksekusi Sabotase & Verifikasi Gejala
 Script `break_routing.sh` dijalankan langsung di **`Shigeru`** tanpa membaca isinya:
 
-![Eksekusi break_routing.sh di Shigeru](Assets/Soal%209/Screenshot%202026-11-24%20233231.png)
+![Eksekusi break_routing.sh di Shigeru](Assets/Soal%209/01_shigeru_run_break_routing.png)
 
 Gejala yang muncul sesuai skenario soal:
 **`Armisael` masih bisa ping gateway-nya sendiri (`Shigeru` `192.230.4.81`)** dengan 0% packet loss:
 
-![Armisael tetap bisa ping gateway Shigeru](Assets/Soal%209/Screenshot%202026-11-24%20233251.png)
+![Armisael tetap bisa ping gateway Shigeru](Assets/Soal%209/02_armisael_ping_gateway_sukses.png)
 
 **`Lilith` (`192.230.4.74`) gagal ping ke `Armisael` (`192.230.4.83`)** dengan 100% packet loss:
 
-![Lilith gagal ping Armisael sebelum perbaikan](Assets/Soal%209/Screenshot%202026-11-24%20233352.png)
+![Lilith gagal ping Armisael sebelum perbaikan](Assets/Soal%209/03_lilith_ping_armisael_gagal.png)
 
 ### 2. Hasil Diagnostik di `Shigeru` & Temuan 4 Penyebab Sabotase
 Pemeriksaan dilakukan dengan `sysctl net.ipv4.ip_forward`, `ip -br a`, `ip route show`, `ip rule show`, `iptables -S`, dan `ping 192.230.4.129`:
 
-![Diagnostik lengkap di Shigeru](Assets/Soal%209/Screenshot%202026-11-24%20233502.png)
+![Diagnostik lengkap di Shigeru](Assets/Soal%209/04_shigeru_diagnostik_4_penyebab.png)
 
 Ditemukan **4 penyebab sekaligus** pada `Shigeru`:
 1. **`net.ipv4.ip_forward = 0`** — Fitur forwarding kernel dimatikan sehingga `Shigeru` tidak meneruskan paket lintas interface (`eth0` ↔ `eth1`).
@@ -450,13 +470,13 @@ Ditemukan **4 penyebab sekaligus** pada `Shigeru`:
 4. **`90: from all iif eth1 lookup 100`** — Ditambahkan aturan *policy routing* (`ip rule`) berprioritas `90` yang mengalihkan seluruh paket masuk dari `eth1` (`Switch-Monolith`) ke tabel routing `100` sebelum mencapai tabel `main`.
 
 ### 3. Perbaikan & Pembuktian
-Seluruh penyebab dibersihkan (`ip rule del pref 90`, `ip route del blackhole 192.230.4.72/29`, mengaktifkan `net.ipv4.ip_forward = 1`, dan memulihkan `default via 192.230.4.129 dev eth0` melalui `/root/shigeru.sh`):
+Seluruh penyebab dibersihkan (`ip rule del pref 90`, `ip route del blackhole 192.230.4.72/29`, mengaktifkan `net.ipv4.ip_forward = 1`, dan memulihkan `default via 192.230.4.129 dev eth0` melalui `shigeru.sh`):
 
-![Perbaikan di Shigeru](Assets/Soal%209/Screenshot%202026-11-25%20134159.png)
+![Perbaikan di Shigeru](Assets/Soal%209/05_shigeru_perbaikan_routing.png)
 
 Setelah perbaikan, `ping` dari **`Lilith`** ke **`Armisael`** (`192.230.4.83`) kembali berhasil dengan **0% packet loss**:
 
-![Bukti Lilith berhasil ping Armisael kembali](Assets/Soal%209/Screenshot%202026-11-25%20134210.png)
+![Bukti Lilith berhasil ping Armisael kembali](Assets/Soal%209/06_lilith_ping_armisael_berhasil.png)
 
 ---
 
@@ -467,17 +487,17 @@ Para pilot terkunci di dalam: paginya giliran para pilot mengeluh. Unit-01, Unit
 Setelah `break_nat.sh` dijalankan pada `Misato` dan `Gendou`:
 - Di **`Unit-01`** (`Switch-Cage`): `ping 8.8.8.8` **gagal (100% packet loss)**, sedangkan `ping 192.230.4.74` (`Lilith`) **normal (0% packet loss)**:
 
-![Gejala di Unit-01: gagal ke 8.8.8.8, normal ke Lilith](Assets/Soal%2010/Screenshot%202026-11-25%20134731.png)
+![Gejala di Unit-01: gagal ke 8.8.8.8, normal ke Lilith](Assets/Soal%2010/01_unit01_gagal_8888_sukses_lilith.png)
 
 - Di **`Spy`** (`Switch-Intel`): `ping 8.8.8.8` **tetap berhasil (0% packet loss)**:
 
-![Gejala di Spy: tetap normal ke 8.8.8.8](Assets/Soal%2010/Screenshot%202026-11-25%20134818.png)
+![Gejala di Spy: tetap normal ke 8.8.8.8](Assets/Soal%2010/02_spy_ping_8888_normal.png)
 
 ### 2. Hasil Diagnostik di `Misato` dan `Gendou` & Temuan 2 Penyebab Sabotase
 
 **Diagnostik di `Misato`:**
 
-![Diagnostik iptables dan routing di Misato](Assets/Soal%2010/Screenshot%202026-11-25%20134926.png)
+![Diagnostik iptables dan routing di Misato](Assets/Soal%2010/03_misato_diagnostik_snat_sabotase.png)
 
 Ditemukan **Penyebab #1 (di `Misato`)**:
 ```text
@@ -487,9 +507,9 @@ Router internal `Misato` melakukan **`SNAT`** mengubah IP sumber paket dari `Swi
 
 **Diagnostik di `Gendou`:**
 
-![Diagnostik iptables nat dan filter di Gendou](Assets/Soal%2010/Screenshot%202026-11-25%20134956.png)
+![Diagnostik iptables nat dan filter di Gendou](Assets/Soal%2010/04_gendou_diagnostik_nat_return_dan_forward.png)
 
-![Tabel routing Gendou tetap normal](Assets/Soal%2010/Screenshot%202026-11-25%20135010.png)
+![Tabel routing Gendou tetap normal](Assets/Soal%2010/05_gendou_tabel_routing_normal.png)
 
 Ditemukan **Penyebab #2 (di `Gendou`)**:
 ```text
@@ -510,15 +530,15 @@ Pada tabel `nat` `Gendou`, disisipkan rule **`-j RETURN`** untuk subnet `Cage` (
 ### 4. Perbaikan & Pembuktian
 Rule sabotase pada `Misato` dibersihkan (`iptables -t nat -F`, `iptables -F`, `iptables -t mangle -F`, lalu `bash misato.sh`) dan `Gendou` dipulihkan melalui `bash gendo.sh`:
 
-![Perbaikan di Misato](Assets/Soal%2010/Screenshot%202026-11-25%20135646.png)
+![Perbaikan di Misato](Assets/Soal%2010/06_misato_perbaikan_flush_nat.png)
 
-![Perbaikan di Gendou](Assets/Soal%2010/Screenshot%202026-11-25%20135718.png)
+![Perbaikan di Gendou](Assets/Soal%2010/07_gendou_perbaikan_gendo_sh.png)
 
 Verifikasi tabel `nat` setelah perbaikan:
 **`Gendou`** hanya memiliki 1 rule `MASQUERADE` pada `POSTROUTING` (rule `RETURN` sudah terhapus dan counter naik):
 
-![Verifikasi POSTROUTING Gendou bersih](Assets/Soal%2010/Screenshot%202026-11-25%20135911.png)
+![Verifikasi POSTROUTING Gendou bersih](Assets/Soal%2010/08_gendou_verifikasi_masquerade_bersih.png)
 
 **`Misato`** memiliki tabel `nat` yang sepenuhnya bersih (tidak ada lagi `SNAT`):
 
-![Verifikasi tabel nat Misato bersih](Assets/Soal%2010/Screenshot%202026-11-25%20135938.png)
+![Verifikasi tabel nat Misato bersih](Assets/Soal%2010/09_misato_verifikasi_nat_bersih.png)
